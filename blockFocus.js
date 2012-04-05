@@ -1,3 +1,9 @@
+/*
+ *  Project: jQuery-BlockFocus
+ *  Description: A jQuery plug-in that takes a selector and fires an event whenever a matched element is scrolled into.
+ *  Author: Tim Hettler
+ */
+
 (function ($) {
 
 	// requestAnim shim layer by Paul Irish (http://paulirish.com/2011/requestanimationframe-for-smart-animating/)
@@ -78,8 +84,7 @@
 				currBlockIndex = undefined;
 			
 			for (var i=0; i<$this.blocks.length; i++) {
-				//console.log($this,$this.blocks[i],$($this.blocks[i]).offset().top,scrollTop);
-				if ($($this.blocks[i]).offset().top <= scrollTop - $this.settings.offset) {
+				if ($($this.blocks[i]).offset().top <= scrollTop + $this.settings.offset) {
 					currBlockIndex = i;
 				}
 			}
