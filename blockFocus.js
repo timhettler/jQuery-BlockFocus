@@ -14,9 +14,20 @@
 				window.oRequestAnimationFrame      || 
 				window.msRequestAnimationFrame     || 
 				function( callback ){
-					window.setTimeout(callback, 1000 / 60);
+					return window.setTimeout(callback, 1000 / 60);
 				};
 	})();
+	
+	
+	// cancelRequestAnim shim layer by Jerome Etienne (http://notes.jetienne.com/2011/05/18/cancelRequestAnimFrame-for-paul-irish-requestAnimFrame.html)
+	window.cancelRequestAnimFrame = ( function() {
+		return window.cancelAnimationFrame              ||
+			   window.webkitCancelRequestAnimationFrame ||
+			   window.mozCancelRequestAnimationFrame    ||
+			   window.oCancelRequestAnimationFrame      ||
+			   window.msCancelRequestAnimationFrame     ||
+			   clearTimeout
+	} )();
 
 	BlockFocus = function (settings) {
 	
@@ -24,7 +35,8 @@
 		this.el = $('body'),
 		this.blocks = this.el.find(this.settings.selector),
 		this.currentBlockIndex = this.getCurBlockIndex($(window).scrollTop()),
-		this.currentBlock = (this.currentBlockIndex) ? this.blocks.eq(this.currentBlockIndex) : undefined;
+		this.currentBlock = (this.currentBlockIndex) ? this.blocks.eq(this.currentBlockIndex) : undefined,
+		this.watchLoop;
 		
 		return this;
 	
@@ -65,7 +77,13 @@
 				$this.didScroll = false;
 			}
 			
-			requestAnimFrame(function(){$this.watch()});
+			this.watchLoop = requestAnimFrame(function(){$this.watch()});
+		},
+		
+		unwatch: function() {
+		
+			cancelRequestAnimFrame(this.watchLoop);  
+			
 		},
 		
 		onScroll: function () {
