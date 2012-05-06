@@ -34,8 +34,10 @@
 		this.settings = settings,
 		this.el = $('body'),
 		this.blocks = this.el.find(this.settings.selector),
-		this.currentBlockIndex = this.getCurBlockIndex($(window).scrollTop()),
-		this.currentBlock = (this.currentBlockIndex) ? this.blocks.eq(this.currentBlockIndex) : undefined,
+		this.currentBlockIndex = this.getCurBlockIndex(),
+		this.currentBlock = undefined,
+		this.scrollDirection = 1,
+		this.relativePosition = 0;
 		this.watchLoop;
 		
 		return this;
@@ -53,9 +55,6 @@
 			$this.didScroll = false;
 			
 			$this.el.on('_blockChange',function(e,curBlockIndex){
-				$this.currentBlockIndex = curBlockIndex,
-				$this.currentBlock = ($this.currentBlockIndex) ? $this.blocks.eq(this.currentBlockIndex) : undefined;
-				console.log('block changed to '+curBlockIndex+'!');
 				$this.settings.callback.apply($this);
 			});
 			
@@ -80,7 +79,7 @@
 			this.watchLoop = requestAnimFrame(function(){$this.watch()});
 		},
 		
-		unwatch: function() {
+		unWatch: function() {
 		
 			cancelRequestAnimFrame(this.watchLoop);  
 			
@@ -89,25 +88,57 @@
 		onScroll: function () {
 			
 			var $this = this,
-				curBlockIndex = $this.getCurBlockIndex($(window).scrollTop());
+				scrollTop = $(window).scrollTop();
 				
-			if(curBlockIndex !== $this.currentBlockIndex) {
-				$this.el.trigger('_blockChange', curBlockIndex);
-			}
+			$this.scrollDirection =  ( scrollTop > $this.scrollTop ) ? 1 : 0 ;
+			$this.scrollTop = scrollTop;
+			$this.setCurBlock($this.getCurBlockIndex(scrollTop));
+			$this.setRelativePostion($this.getPosInCurBlock(scrollTop));
 		},
+		
+		setCurBlock: function (index) {
+		
+			if(index !== $this.currentBlockIndex) {
+			
+				$this.currentBlockIndex = index,
+				$this.currentBlock = ($this.currentBlockIndex) ? $this.blocks.eq(this.currentBlockIndex) : undefined;
+				console.log('block changed to '+index+'!');
+				$this.el.trigger('_blockChange', index);
+			}
+			
+			return $this.currentBlockIndex;
+		},
+		
+		setRelativePostion: function (pos) {
+		
+			var $this = this;
+				
+			return $this.relativePosition = pos;
+		}
 		
 		getCurBlockIndex: function (scrollTop) {
 		
 			var $this = this,
-				currBlockIndex = undefined;
+					curBlockIndex = undefined,
+					scrollTop = scrollTop || $(window).scrollTop();
 			
 			for (var i=0; i<$this.blocks.length; i++) {
 				if ($($this.blocks[i]).offset().top <= scrollTop + $this.settings.offset) {
-					currBlockIndex = i;
+					curBlockIndex = i;
 				}
 			}
 			
-			return currBlockIndex;
+			return curBlockIndex;
+		},
+		
+		getPosInCurBlock: function (scrollTop) {
+		
+			var $this = this,
+				$curBlock = $this.currentBlock,
+				scrollTop = scrollTop || $(window).scrollTop();
+				
+			
+			return (scrollTop + $this.settings.offset - $curBlock.offset().top) / $curBlock.outerHeight();
 		}
 	
 	};
