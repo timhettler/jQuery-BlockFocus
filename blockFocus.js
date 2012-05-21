@@ -26,7 +26,7 @@
 			   window.mozCancelRequestAnimationFrame    ||
 			   window.oCancelRequestAnimationFrame      ||
 			   window.msCancelRequestAnimationFrame     ||
-			   clearTimeout
+			   clearTimeout;
 	} )();
 
 	BlockFocus = function (settings) {
@@ -34,10 +34,11 @@
 		this.settings = settings,
 		this.el = $('body'),
 		this.blocks = this.el.find(this.settings.selector),
-		this.currentBlockIndex = this.getCurBlockIndex(),
+		this.currentBlockIndex = undefined,
 		this.currentBlock = undefined,
+		this.scrollTop = 0,
 		this.scrollDirection = 1,
-		this.relativePosition = 0;
+		this.relativePosition = 0,
 		this.watchLoop;
 		
 		return this;
@@ -51,17 +52,12 @@
 			var $this = this;
 			
 			if($this.el.data('_blockFocus')) return $this.el.data('_blockFocus');
-		
-			$this.didScroll = false;
 			
 			$this.el.on('_blockChange',function(e,curBlockIndex){
-				$this.settings.callback.apply($this);
+				$this.settings.callback.apply($this, [$this.settings, $this.blocks, $this.currentBlockIndex]);
 			});
 			
-			$(window).on('scroll.blockFocus',function(){
-				$this.didScroll = true; 
-			});
-			
+			$this.onScroll();
 			$this.watch();
 			
 			$this.el.data('_blockFocus', this);
@@ -71,9 +67,8 @@
 		
 			var $this = this;
 			
-			if($this.didScroll) {
+			if($this.scrollTop !== $(window).scrollTop()) {
 				$this.onScroll();
-				$this.didScroll = false;
 			}
 			
 			this.watchLoop = requestAnimFrame(function(){$this.watch()});
@@ -94,16 +89,23 @@
 			$this.scrollTop = scrollTop;
 			$this.setCurBlock($this.getCurBlockIndex(scrollTop));
 			$this.setRelativePostion($this.getPosInCurBlock(scrollTop));
+
+			$this.el.trigger('_blockfocus.scroll', [$this.currentBlockIndex, $this.relativePosition, $this.scrollDirection]);
 		},
 		
 		setCurBlock: function (index) {
+
+			var $this = this;
 		
 			if(index !== $this.currentBlockIndex) {
-			
 				$this.currentBlockIndex = index,
-				$this.currentBlock = ($this.currentBlockIndex) ? $this.blocks.eq(this.currentBlockIndex) : undefined;
+				$this.currentBlock = ($this.currentBlockIndex !== undefined) ? $this.blocks.eq(this.currentBlockIndex) : undefined;
 				console.log('block changed to '+index+'!');
-				$this.el.trigger('_blockChange', index);
+				$this.blocks.removeClass('bf-is-in-focus');
+				if(index !== undefined) {
+					$this.currentBlock.addClass('bf-is-in-focus');
+					$this.el.trigger('_blockChange', index);
+				}
 			}
 			
 			return $this.currentBlockIndex;
@@ -114,7 +116,7 @@
 			var $this = this;
 				
 			return $this.relativePosition = pos;
-		}
+		},
 		
 		getCurBlockIndex: function (scrollTop) {
 		
@@ -138,7 +140,7 @@
 				scrollTop = scrollTop || $(window).scrollTop();
 				
 			
-			return (scrollTop + $this.settings.offset - $curBlock.offset().top) / $curBlock.outerHeight();
+			return ($curBlock === undefined) ? null : (scrollTop + $this.settings.offset - $curBlock.offset().top) / $curBlock.outerHeight();
 		}
 	
 	};
