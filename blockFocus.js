@@ -183,4 +183,4 @@
 		callback: function () {}
 	};
 
-})(jQuery);
+})(window.jQuery);
